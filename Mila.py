@@ -7,7 +7,7 @@ import webbrowser as wb
 
 
 #model and recognizer
-assistant_names = ["мили"]
+assistant_names = ["мила"]
 model = Model('small_model')
 rec = KaldiRecognizer(model, 16000)
 p = pyaudio.PyAudio()
