@@ -48,24 +48,6 @@ def creator():#creator
     url = web["creator"][-1]
     print("открываю GitHub Разработчика...")
     wb.open(url)
-
- 
-#listen
-def listen():
-    while True:
-        data = stream.read(4000, exception_on_overflow=False)
-        if (rec.AcceptWaveform(data)) and (len(data) > 0):
-            answer = json.loads(rec.Result())
-            if answer['text']:
-                yield answer ['text']
-
-#commands
-def recognize_command(text):
-    for cmd, keywords in commands.items():
-        for word in keywords:
-            if word in text:
-                return cmd
-    return None
 #apps
 def open_app(text):
     for app, keywords in apps.items():
@@ -74,10 +56,12 @@ def open_app(text):
                 exe_path = keywords[-1]
                 try:
                     subprocess.Popen(exe_path)
-                    print(f"Открываю приложение {app}...")
+                    print(f"Открываю {app}...")
                 except Exception as e:
-                    print(f"Не удалось открыть приложение {app}: {e}")
+                    print(f"Не удалось открыть {app}: {e}")
                 return True
+    return False
+    
 #site
 def open_site(text):
     for website, keywords in web.items():
@@ -89,6 +73,35 @@ def open_site(text):
                     print(f"Открываю {website}...")
                 return True  # сайт найден
     return False  # сайт не найден
+
+#website and apps together   
+def open_app_or_site(text):
+    if open_app(text):
+        return True
+    if open_site(text):
+        return True
+    return False    
+
+
+#listen
+def listen():
+    while True:
+        data = stream.read(4000, exception_on_overflow=False)
+        if (rec.AcceptWaveform(data)) and (len(data) > 0):
+            answer = json.loads(rec.Result())
+            if answer['text']:
+                yield answer ['text']
+
+#commands
+def recognize_command(text):
+    text = text.lower()
+    for cmd, keywords in commands.items():
+        for word in keywords:
+            if word.lower() == text:
+                return cmd
+    return None
+
+
 
 #start
 if __name__ == "__main__":
@@ -114,11 +127,8 @@ if __name__ == "__main__":
         elif command == "say_name":
             say_name()
             command_executed = True
-      # Если внутренняя команда не сработала
         if not command_executed:
-            found = open_app(text)  # пробуем открыть приложение
-            if not found:
-                found = open_site(text)  # пробуем открыть сайт
+            found = open_app_or_site(text)
             if not found:
                 print(f"Команда или приложение для слова '{text}' не найдено.")
    
