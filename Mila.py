@@ -1,10 +1,11 @@
 #import
 import json, pyaudio,  subprocess, os
 from vosk import Model, KaldiRecognizer
-from commands import commands
-import apps
 import webbrowser as wb
-
+#import .py
+from commands import commands
+from apps import apps
+from website import web
 
 #model and recognizer
 assistant_names = ["мила"]
@@ -27,17 +28,27 @@ def say_goodgirl():#goodgirl
     print("Спасибо :3")
 
 def say_aboutme():#aboutMile
-    print("Меня зовут Мили,я голосовой помощник,буду рада вам помогать,если вы хотите посмотреть на все команды то советую посмотреть файлы как:commands.py и apps.py #могут в будущем измениться")
+    print("Меня зовут Мила,я голосовой помощник,буду рада вам помогать,если вы хотите посмотреть на все команды то советую посмотреть файлы как:commands.py, apps.py, website.py #могут в будущем измениться")
 
 def say_name():#sayname
-    print("Да сэр")
-#site and apps
+    print("Да сэр!")
+
+def say_thanks():#thanks
+    print("Всегда пожалуйста!")
+#site
 def youtube():#YouTube
-    url = apps["youtube"][-1]
+    url = web["youtube"][-1]
     print("открываю YouTube...")
     wb.open(url)
+def github():#github
+    url = web["github"][-1]
+    print("открываю GitHub...")
+    wb.open(url)
+def creator():#creator
+    url = web["creator"][-1]
+    print("открываю GitHub Разработчика...")
+    wb.open(url)
 
-    
  
 #listen
 def listen():
@@ -56,16 +67,28 @@ def recognize_command(text):
                 return cmd
     return None
 #apps
-def open_app_by_name(text):
-    for app, keywords in apps.apps.items():
+def open_app(text):
+    for app, keywords in apps.items():
+        for keyword in keywords[:-1]:
+            if keyword.lower() in text.lower():
+                exe_path = keywords[-1]
+                try:
+                    subprocess.Popen(exe_path)
+                    print(f"Открываю приложение {app}...")
+                except Exception as e:
+                    print(f"Не удалось открыть приложение {app}: {e}")
+                return True
+#site
+def open_site(text):
+    for website, keywords in web.items():
         for keyword in keywords[:-1]:  # кроме последнего элемента (URL)
             if keyword.lower() in text.lower():
                 url = keywords[-1]
                 if url.startswith("http"):
                     wb.open(url)
-                    print(f"Открываю {app}...")
-                return
-    print(f"Приложение или сайт для слова '{text}' не найдено.")
+                    print(f"Открываю {website}...")
+                return True  # сайт найден
+    return False  # сайт не найден
 
 #start
 if __name__ == "__main__":
@@ -74,19 +97,30 @@ if __name__ == "__main__":
         print(f"Вы сказали: {text}")
             
         command = recognize_command(text)
+        command_executed = False
        #PC
         if command == "say_hello":
             say_hello()
+            command_executed = True
         elif command == "say_goodbye":
             say_goodbye()
+            command_executed = True
         elif command == "say_goodgirl":
             say_goodgirl()
+            command_executed = True
         elif command == "say_aboutme":
             say_aboutme()
-        else:#not recognized
-            print("Команда не распознана.")
-       #site and apps
-        open_app_by_name(text)
+            command_executed = True
+        elif command == "say_name":
+            say_name()
+            command_executed = True
+      # Если внутренняя команда не сработала
+        if not command_executed:
+            found = open_app(text)  # пробуем открыть приложение
+            if not found:
+                found = open_site(text)  # пробуем открыть сайт
+            if not found:
+                print(f"Команда или приложение для слова '{text}' не найдено.")
    
         
         
