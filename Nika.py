@@ -15,8 +15,7 @@ from website import web
 
 model_path = "models/v4_ru.pt"
 
-wake_words = ["ника"]
-wake_timeout = 5  # секунды
+
 
 importer = torch.package.PackageImporter(model_path)
 tts_model = importer.load_pickle("tts_models", "model")
@@ -94,30 +93,32 @@ def creator():#creator
     wb.open(url)
 #apps
 def open_app(text):
+    text_lower = text.lower()
     for app, keywords in apps.items():
+        exe_path = keywords[-1]
         for keyword in keywords[:-1]:
-            if keyword.lower() in text.lower():
-                exe_path = keywords[-1]
+            if all(word in text_lower for word in keyword.lower().split()):
                 try:
                     subprocess.Popen(exe_path)
                     speak(f"Открываю {app}...")
+                    return True
                 except Exception as e:
                     print(f"Не удалось открыть {app}: {e}")
-                    speak(text)
-                return True
+                    speak(f"Не получилось открыть {app}")
+                    return True
     return False
-    
 #site
 def open_site(text):
+    text_lower = text.lower()
     for website, keywords in web.items():
-        for keyword in keywords[:-1]:  
-            if keyword.lower() in text.lower():
-                url = keywords[-1]
+        url = keywords[-1]
+        for keyword in keywords[:-1]:
+            if all(word in text_lower for word in keyword.lower().split()):
                 if url.startswith("http"):
                     wb.open(url)
                     speak(f"Открываю {website}...")
-                return True  
-    return False  
+                    return True
+    return False
 
 #website and apps together   
 def open_app_or_site(text):
@@ -137,35 +138,53 @@ def recognize_command(text):
     return None
 
 
-#listen
 def listen():
     while True:
         data = stream.read(4000, exception_on_overflow=False)
-        if rec.AcceptWaveform(data) and (len(data) > 0):
-            answer = json.loads(rec.Result())
-            if 'text' in answer and answer['text']:
-                yield answer ['text']
-
+        if rec.AcceptWaveform(data):
+            result = json.loads(rec.Result())
+            text = result.get("text", "").lower().strip()
+            if text:
+                yield text
+        else:
+            yield ""
 #start
 if __name__ == "__main__":
-    listening = False
-    last_active = 0
     speak("Здравствуйте!... Скажите 'Ника', чтобы начать.")
     
+    WAKE_WORD = "ника"
+    WAKE_TIMEOUT = 10  
+    listening = False
+    last_active = 0
+    timeout_announced = False  
+
     for text in listen():
-        print(f"Вы сказали: {text}")
-        if any(word in text for word in wake_words):
-            for word in wake_words:
-                text = text.replace(word, "").strip(", ").strip()
-            listening = True
-            last_active = time.time()
-            speak("Да, я слушаю...")
-            
-        if not listening or text == "":
+        if not listening:
+            if text and WAKE_WORD in text:
+                listening = True
+                last_active = time.time()
+                timeout_announced = False
+                speak("Да, сэр.")
             continue
-        #актив режим            
+
+        
+        if listening:
+            if text:
+                print(f"Вы сказали: {text}")
+                last_active = time.time()
+                timeout_announced = False
+            elif time.time() - last_active > WAKE_TIMEOUT and not timeout_announced:
+                listening = False
+                timeout_announced = True
+                speak("Время ожидания истекло. Скажите 'Ника', чтобы начать снова.")
+                continue
+            else:
+                continue
+
+        text = text.replace(WAKE_WORD, "").strip()
         command_executed = False
         command = recognize_command(text)
+        
        #PC
         if command == "say_hello":
             say_hello()
@@ -186,7 +205,18 @@ if __name__ == "__main__":
             say_wait()
             command_executed = True
         
-
+        if not command_executed:
+            found = open_app_or_site(text)
+            if not found:
+                speak("Команда не найдена...!")
+        
+        
+        
+        
+        
+        
+    else:
+        pass
       
         
   
