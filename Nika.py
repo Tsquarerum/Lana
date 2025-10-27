@@ -5,9 +5,18 @@ import webbrowser as wb
 import torch
 import sounddevice as sd
 import numpy as np
+import time
+
+#import .py
+from commands import commands
+from apps import apps
+from website import web
+
 
 model_path = "models/v4_ru.pt"
 
+wake_words = ["ника"]
+wake_timeout = 5  # секунды
 
 importer = torch.package.PackageImporter(model_path)
 tts_model = importer.load_pickle("tts_models", "model")
@@ -35,14 +44,10 @@ def speak(text: str, speed: float = 1.00):
         )
     sd.play(audio, 24000)
     sd.wait()
-#import .py
-from commands import commands
-from apps import apps
-from website import web
+
 
 
 #model and recognizer
-assistant_names = ["лана"]
 model = Model('small_model')
 rec = KaldiRecognizer(model, 16000)
 p = pyaudio.PyAudio()
@@ -62,18 +67,16 @@ def say_goodgirl():#goodgirl
     speak("Спасибо...!")
     
 def say_aboutme():#aboutMile
-    speak("Меня зовут Лана, я голосовой помощник, буду рада вам помогать")
+    speak("Меня зовут Ника, я голосовой помощник, буду рада вам помогать")
     
-def say_name():#sayname
-    speak("Да сэр!...")
     
 def say_thanks():#thanks 
-    speak("Всегда пожалуйста...!")
+    speak("Всегда пожалуйста...")
 
 def say_wait():#wait
     speak("Хорошо...буду вас ждать...!")
 #site
-def youtube():#YouTube
+def translator():#Translator
     url = web["translator"][-1]
     speak("открываю Переводчик...")
     wb.open(url)
@@ -124,16 +127,6 @@ def open_app_or_site(text):
         return True
     return False    
 
-
-#listen
-def listen():
-    while True:
-        data = stream.read(4000, exception_on_overflow=False)
-        if (rec.AcceptWaveform(data)) and (len(data) > 0):
-            answer = json.loads(rec.Result())
-            if answer['text']:
-                yield answer ['text']
-
 #commands
 def recognize_command(text):
     text = text.lower()
@@ -144,15 +137,35 @@ def recognize_command(text):
     return None
 
 
+#listen
+def listen():
+    while True:
+        data = stream.read(4000, exception_on_overflow=False)
+        if rec.AcceptWaveform(data) and (len(data) > 0):
+            answer = json.loads(rec.Result())
+            if 'text' in answer and answer['text']:
+                yield answer ['text']
 
 #start
 if __name__ == "__main__":
-    speak("Здравствуйте!... Чем могу помочь?")
+    listening = False
+    last_active = 0
+    speak("Здравствуйте!... Скажите 'Ника', чтобы начать.")
+    
     for text in listen():
         print(f"Вы сказали: {text}")
+        if any(word in text for word in wake_words):
+            for word in wake_words:
+                text = text.replace(word, "").strip(", ").strip()
+            listening = True
+            last_active = time.time()
+            speak("Да, я слушаю...")
             
-        command = recognize_command(text)
+        if not listening or text == "":
+            continue
+        #актив режим            
         command_executed = False
+        command = recognize_command(text)
        #PC
         if command == "say_hello":
             say_hello()
@@ -166,29 +179,14 @@ if __name__ == "__main__":
         elif command == "say_aboutme":
             say_aboutme()
             command_executed = True
-        elif command == "say_name":
-            say_name()
-            command_executed = True
         elif command == "say_thanks":
             say_thanks()
             command_executed = True
         elif command == "say_wait":
             say_wait()
             command_executed = True
-        if not command_executed:
-            found = open_app_or_site(text)
-            if not found:
-                speak("Команда не найдена...!")
         
+
+      
         
-        
-        
-        
-        
-    else:
-        pass
-        
-        
-        
-        
-        
+  
