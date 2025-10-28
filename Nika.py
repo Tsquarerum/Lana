@@ -91,9 +91,27 @@ def creator():#creator
     url = web["creator"][-1]
     speak("открываю Гитхаб Разработчика...")
     wb.open(url)
+def reddit():#reddit
+    url = web["reddit"][-1]
+    speak("открываю Реддит...")
+    wb.open(url)
+def gmail():#gmail не работает
+    url = web["gmail"][-1]
+    speak("открываю почту...")
+    wb.open(url)
+def telegram():#telegram
+    url = web["telegram"][-1]
+    speak("открываю Телеграмм...")
+    wb.open(url)
+def roblox():#roblox
+    url = web["roblox"][-1]
+    speak("открываю Роблокс...")
+    wb.open(url)
 #apps
 def open_app(text):
     text_lower = text.lower()
+    opened_any = False
+    
     for app, keywords in apps.items():
         exe_path = keywords[-1]
         for keyword in keywords[:-1]:
@@ -101,15 +119,19 @@ def open_app(text):
                 try:
                     subprocess.Popen(exe_path)
                     speak(f"Открываю {app}...")
-                    return True
+                    opened_any = True
+                    break
                 except Exception as e:
                     print(f"Не удалось открыть {app}: {e}")
                     speak(f"Не получилось открыть {app}")
-                    return True
-    return False
+                    opened_any = True
+                    break
+    return opened_any
 #site
 def open_site(text):
     text_lower = text.lower()
+    opened_any = False
+    
     for website, keywords in web.items():
         url = keywords[-1]
         for keyword in keywords[:-1]:
@@ -117,16 +139,57 @@ def open_site(text):
                 if url.startswith("http"):
                     wb.open(url)
                     speak(f"Открываю {website}...")
-                    return True
-    return False
+                    opened_any = True
+                    break
+    return opened_any
 
 #website and apps together   
 def open_app_or_site(text):
-    if open_app(text):
+    text_lower = text.lower()
+    opened_items = []
+
+    #apps
+    for app, keywords in apps.items():
+        exe_path = keywords[-1]
+        for keyword in keywords[:-1]:
+            if all(word in text_lower for word in keyword.lower().split()):
+                try:
+                    subprocess.Popen(exe_path)
+                    opened_items.append(app)
+                    break
+                except Exception as e:
+                    print(f"Не удалось открыть {app}: {e}")
+                    opened_items.append(app)
+                    break
+#site
+    for website, keywords in web.items():
+        url = keywords[-1]
+        for keyword in keywords[:-1]:
+            if all(word in text_lower for word in keyword.lower().split()):
+                if url.startswith("http"):
+                    opened_items.append(website)
+                    break
+
+    #Говорим один раз
+    if opened_items:
+        speak("Открываю"+ ",".join(opened_items))
+
+        for app in opened_items:
+            if app in apps:
+                exe_path = apps[app][-1]
+                try:
+                    subprocess.Popen(exe_path)
+                except:
+                    pass
+            elif app in web:
+                url = web[app][-1]
+                try:
+                    wb.open(url)
+                except:
+                    pass
         return True
-    if open_site(text):
-        return True
-    return False    
+
+    return False
 
 #commands
 def recognize_command(text):
@@ -153,7 +216,7 @@ if __name__ == "__main__":
     speak("Здравствуйте!... Скажите 'Ника', чтобы начать.")
     
     WAKE_WORD = "ника"
-    WAKE_TIMEOUT = 10  
+    WAKE_TIMEOUT = 20  
     listening = False
     last_active = 0
     timeout_announced = False  
