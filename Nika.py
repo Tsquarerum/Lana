@@ -11,6 +11,8 @@ import time
 from commands import commands
 from apps import apps
 from website import web
+from system_commands import *
+
 
 
 model_path = "models/v4_ru.pt"
@@ -95,7 +97,7 @@ def reddit():#reddit
     url = web["reddit"][-1]
     speak("открываю Реддит...")
     wb.open(url)
-def gmail():#gmail не работает
+def gmail():#gmail 
     url = web["gmail"][-1]
     speak("открываю почту...")
     wb.open(url)
@@ -170,7 +172,6 @@ def open_app_or_site(text):
                     opened_items.append(website)
                     break
 
-    #Говорим один раз
     if opened_items:
         speak("Открываю"+ ",".join(opened_items))
 
@@ -267,6 +268,35 @@ if __name__ == "__main__":
         elif command == "say_wait":
             say_wait()
             command_executed = True
+        #SYSTEM_COMMANDS
+        if command == "volume_up":
+            volume_up()
+            command_executed = True
+        elif command == "volume_down":
+            volume_down()
+            command_executed = True
+        elif command == "mute":
+            mute()
+            command_executed = True
+        elif command == "unmute":
+            unmute()
+            command_executed = True
+        elif command == "lock_pc":
+            lock_pc()
+            command_executed = True
+        elif command == "shutdown_pc":
+            shutdown_pc()
+            command_executed = True
+        elif command == "restart_pc":
+            restart_pc()
+            command_executed = True
+        elif command == "sleep_pc":
+            sleep_pc()
+            command_executed = True
+        elif command == "empty_recycle_bin":
+            empty_recycle_bin()
+            command_executed = True
+        
         
         if not command_executed:
             found = open_app_or_site(text)
@@ -274,12 +304,7 @@ if __name__ == "__main__":
                 speak("Команда не найдена...!")
         
         
-        
-        
-        
-        
     else:
         pass
-      
+            
         
-  
